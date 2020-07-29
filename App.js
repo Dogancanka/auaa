@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { View, Platform, TouchableOpacity } from "react-native";
+import { View, Platform, TouchableOpacity, BackHandler } from "react-native";
 import { WebView } from "react-native-webview";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,9 +8,34 @@ import { Ionicons } from "@expo/vector-icons";
 export default class App extends Component {
   WEBVIEW_REF = React.createRef();
 
+  state = {
+    canGoBack: false,
+  };
+
+  componentDidMount() {
+    BackHandler.addEventListener("hardwareBackPress", this.handleBackButton);
+  }
+
+  componentWillUnmount() {
+    BackHandler.removeEventListener("hardwareBackPress", this.handleBackButton);
+  }
+
+  handleBackButton = () => {
+    if (this.state.canGoBack) {
+      this.WEBVIEW_REF.current.goBack();
+      return true;
+    }
+  };
+
+  onNavigationStateChange = (navState) => {
+    this.setState({
+      canGoBack: navState.canGoBack,
+    });
+  };
+
   render() {
-    return (
-      <SafeAreaView
+    if (Platform.OS === 'ios') {
+      return <SafeAreaView
         style={{
           flex: 1,
           backgroundColor: "#002546",
@@ -39,7 +64,7 @@ export default class App extends Component {
               color="white"
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => this.WEBVIEW_REF.current.reload()}>
+            <TouchableOpacity onPress={() => this.WEBVIEW_REF.current.reload()}>
             <Ionicons
               name={Platform.OS === "ios" ? "ios-refresh" : "md-refresh"}
               size={32}
@@ -47,7 +72,23 @@ export default class App extends Component {
             />
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    );
+      </SafeAreaView>;
+
+    } else {
+      return <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "#002546",
+          justifyContent: "center",
+        }}>
+          <WebView
+          source={{
+            uri: "https://international.au.dk/life/studentscomingtoau/auapp/",
+          }}
+          ref={this.WEBVIEW_REF}
+          onNavigationStateChange={this.onNavigationStateChange}
+          />
+      </SafeAreaView>;
+    }
   }
 }
